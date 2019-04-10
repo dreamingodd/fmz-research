@@ -5,9 +5,8 @@ dayLimit 均线范围 recommend default: 83(AK)
 contractType 合约类型 recommend default: XBTUSD(BitMEX)
 Marker 手续费 recommend default: 0.1(千分之一)
 */
-
 //成交价格,上一次循环中的均线状况,本次循环中的均线状况,持仓信息
-var ratio, value, nowFlag, position, ticker, account, price, lastFlag = null, buyOrSell;
+var ratio, value, nowFlag, position, ticker, account, price, lastFlag = null, buyOrSell, nowStatus = false, nowDate;
 
 //平仓
 function close() {
@@ -22,10 +21,10 @@ function close() {
         //Log("平仓", ticker)
         if (po.Type == 1) {
             exchange.SetDirection("closesell");
-            exchange.Buy(ticker.Last + 10, po.Amount);
+            exchange.Buy(ticker.Last + 1, po.Amount);
         } else {
             exchange.SetDirection("closebuy");
-            exchange.Sell(ticker.Last - 10, po.Amount);
+            exchange.Sell(ticker.Last - 1, po.Amount);
         }
     }
 }
@@ -41,9 +40,6 @@ function buyAll() {
         let price = _N(ticker.Sell, 6);
         let amount = _N(_N(ticker.Sell * ratio, 5) * account.Stocks, 0);
         exchange.Buy(price, amount);
-        Log(ratio);
-        Log(account.Stocks);
-        Log(amount);
         // exchange.Buy(_N(ticker.Sell, 5), _N(_N(ticker.Sell * ratio, 5) * marginLevel * account.Stocks / 95, 0));
     }
 }
@@ -62,17 +58,28 @@ function sellAll() {
 }
 
 function onTick() {
+    let maPrice = getMAPrice();
+    //收线价格是否高于均线
+    let tempStatus = ticker.Last > maPrice;
+    //忽略波动过小的交叉
+    let absValue = Math.abs(1 - (ticker.Last / maPrice));
+    //如果均线指向没有发生变化则不操作,操作之后3天内不不操作
+    if(tempStatus == nowStatus || getNowDate() - nowDate < (1000 * 3600 * 24 * 5) || absValue < 0.01){
+        return;
+    }
+    //一天只交易一次
+    nowDate = getNowDate();
+    Log(maPrice,  ticker.Last, nowStatus, tempStatus, absValue)
+    nowStatus = tempStatus;
     // 价格突破均线买入，跌破均线卖出
-    if ("low" == lastFlag && "high" == nowFlag) {
+    if (nowStatus) {
     //    Log("开空",b,  price, ma5Price, ticker.Last)
         Log("涨过均线，买入:" + ticker.Last + "  " + getMAPrice());
         buyAll();
-    } else if ("high" == lastFlag && "low" == nowFlag) {
+    } else {
     //    Log("开多",b, price, ma5Price, ticker.Last)
         Log("跌破均线，卖出:" + ticker.Last + "  " +  getMAPrice());
         sellAll();
-    } else {
-
     }
     //更新均线状况
     lastFlag = nowFlag;
@@ -95,6 +102,10 @@ function getMAPrice() {
     var maRequired = TA.MA(exchange.GetRecords(PERIOD_D1), dayLimit);
     priceMA = maRequired[maRequired.length - 1];
     return priceMA;
+}
+
+function getNowDate(){
+  return new Date().getTime();
 }
 
 function main() {
