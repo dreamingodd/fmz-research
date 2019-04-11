@@ -37,10 +37,16 @@ function buyAll() {
     // exchange.SetMarginLevel(marginLevel);
     account = _C(exchange.GetAccount);
     if (switchKey != 0) {
-        let price = _N(ticker.Sell, 6);
+        let price = _N(ticker.Sell, 6) + 50;
         let amount = _N(_N(ticker.Sell * ratio, 5) * account.Stocks, 0);
         exchange.Buy(price, amount);
-        // exchange.Buy(_N(ticker.Sell, 5), _N(_N(ticker.Sell * ratio, 5) * marginLevel * account.Stocks / 95, 0));
+        var i = 1;
+        while (null != position && position.length != 0 && position[0].Amount) {
+            Log(position)
+            if (i > 10) break;
+            Sleep(1000 * 60 * 1);
+            i++;
+        }
     }
 }
 
@@ -69,7 +75,7 @@ function onTick() {
     }
     //一天只交易一次
     nowDate = getNowDate();
-    Log(maPrice,  ticker.Last, nowStatus, tempStatus, absValue)
+    //Log(maPrice,  ticker.Last, nowStatus, tempStatus, absValue)
     nowStatus = tempStatus;
     // 价格突破均线买入，跌破均线卖出
     if (nowStatus) {
@@ -109,9 +115,9 @@ function getNowDate(){
 }
 
 function main() {
-    //设置合约类型，不同交易所可设置类型可能不同. 未添加防爆仓机制,倍率过高爆仓时则收益清空.设置的数值留有空间，因此可以忽略手续费
     // BitMEX: XBTUSD
     exchange.SetContractType(contractType);
+    exchange.SetMarginLevel(marginLevel);
     ratio = (100 - Marker * 5) / 100;
     Log("switchKey:" + switchKey);
     //Log("脚本开始运行" + new Date() + "@");

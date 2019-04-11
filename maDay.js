@@ -98,7 +98,6 @@ function getMAPrice() {
 }
 
 function main() {
-    //设置合约类型，不同交易所可设置类型可能不同. 未添加防爆仓机制,倍率过高爆仓时则收益清空.设置的数值留有空间，因此可以忽略手续费
     // BitMEX: XBTUSD
     exchange.SetContractType(contractType);
     ratio = (100 - Marker * 5) / 100;
